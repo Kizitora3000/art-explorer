@@ -8,6 +8,19 @@ import (
 	"net/http"
 )
 
+// 取得したJSONデータは配列なので []struct と定義して合わせる
+type Note []struct {
+	RenoteID string `json:"renoteId"`
+	Renote   struct {
+		User struct {
+			Username string `json:"username"`
+		} `json:"user"`
+		Files []struct {
+			URL string `json:"url"`
+		} `json:"files"`
+	} `json:"renote"`
+}
+
 func main() {
 	// MisskeyのAPIエンドポイントURL
 	apiURL := "https://misskey.io/api/notes/timeline"
@@ -51,6 +64,13 @@ func main() {
 		return
 	}
 
+	var response Note
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		fmt.Println("JSONデコードエラー:", err)
+		return
+	}
+
 	// レスポンスの表示
-	fmt.Println("レスポンス:", string(responseBody))
+	fmt.Println(response[0])
 }
