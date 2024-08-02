@@ -8,11 +8,13 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
 const (
-	accessToken = "WYyriPlqcHJnHAzcSDtNfOQ2bGJWkzbU" // 実際のアクセストークンに置き換えてください
-	LIMIT       = 50
+	LIMIT = 50
 )
 
 // RelationResponse はフォロー関係のAPIレスポンスを表す構造体
@@ -86,6 +88,18 @@ func checkFollowStatus(accessToken, userId string) (bool, error) {
 
 // fetchNotes はMisskeyからノートを取得し、未フォローのユーザーのノートのみを返す関数
 func fetchNotes() ([]NoteDisplay, error) {
+	// .envファイルを読み込む
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	// 環境変数を取得
+	accessToken := os.Getenv("ACCESS_TOKEN")
+	if accessToken == "" {
+		log.Fatal("ACCESS_TOKEN is not set in the environment")
+	}
+
 	apiURL := "https://misskey.io/api/notes/timeline"
 
 	requestBody := map[string]interface{}{
