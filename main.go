@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 )
@@ -23,7 +24,7 @@ type RelationResponse struct {
 }
 
 // Note はMisskeyのノート（投稿）を表す構造体
-type Note []struct {
+type Note struct {
 	RenoteID string `json:"renoteId"`
 	Renote   struct {
 		User struct {
@@ -131,27 +132,27 @@ func fetchNotes() ([]NoteDisplay, error) {
 		return nil, fmt.Errorf("レスポンス読み取りエラー: %v", err)
 	}
 
-	var Notes Note
-	err = json.Unmarshal(responseBody, &Notes)
+	var notes []Note
+	err = json.Unmarshal(responseBody, &notes)
 	if err != nil {
 		return nil, fmt.Errorf("JSONデコードエラー: %v", err)
 	}
 
 	var notesToDisplay []NoteDisplay
 	processedUsernames := make(map[string]bool) // 処理済みユーザーネームを追跡
-	for i := 0; i < LIMIT && i < len(Notes); i++ {
-		is_renote := Notes[i].RenoteID
+	for i := 0; i < LIMIT && i < len(notes); i++ {
+		is_renote := notes[i].RenoteID
 
 		if is_renote == "" {
 			continue
 		}
 
 		// ユーザーネームが既に処理済みの場合はスキップ
-		if processedUsernames[Notes[i].Renote.User.Username] {
+		if processedUsernames[notes[i].Renote.User.Username] {
 			continue
 		}
 
-		renote_user_id := Notes[i].Renote.User.UserId
+		renote_user_id := notes[i].Renote.User.UserId
 
 		isFollowing, err := checkFollowStatus(accessToken, renote_user_id)
 		if err != nil {
@@ -159,12 +160,12 @@ func fetchNotes() ([]NoteDisplay, error) {
 		}
 
 		if !isFollowing {
-			user_url := "https://misskey.io/@" + Notes[i].Renote.User.Username
+			user_url := "https://misskey.io/@" + notes[i].Renote.User.Username
 			notesToDisplay = append(notesToDisplay, NoteDisplay{
 				UserURL: user_url,
-				Files:   Notes[i].Renote.Files,
+				Files:   notes[i].Renote.Files,
 			})
-			processedUsernames[Notes[i].Renote.User.Username] = true // ユーザーネームを処理済みとしてマーク
+			processedUsernames[notes[i].Renote.User.Username] = true // ユーザーネームを処理済みとしてマーク
 		}
 	}
 
@@ -179,89 +180,14 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl := `
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Misskey Notes</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f0f0f0;
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-        .note {
-            background-color: white;
-            border: 1px solid #ddd;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .user-link {
-            display: block;
-            margin-bottom: 10px;
-            color: #0066cc;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .user-link:hover {
-            text-decoration: underline;
-        }
-        .images-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: start;
-        }
-        .note-image {
-            max-width: 400px;
-            max-height: 400px;
-            width: auto;
-            height: auto;
-            object-fit: cover;
-            border-radius: 4px;
-        }
-        @media (max-width: 600px) {
-            .images-container {
-                justify-content: center;
-            }
-            .note-image {
-                max-width: 100%;
-            }
-        }
-    </style>
-</head>
-<body>
-    <h1>未フォローのユーザーのノート</h1>
-    {{range .}}
-    <div class="note">
-        <a href="{{.UserURL}}" class="user-link">ユーザーページ</a>
-        <div class="images-container">
-            {{range .Files}}
-            <img src="{{.URL}}" alt="Attached image" class="note-image" loading="lazy">
-            {{end}}
-        </div>
-    </div>
-    {{end}}
-</body>
-</html>
-`
-
-	t, err := template.New("notesTemplate").Parse(tmpl)
+	tmplPath := filepath.Join("templates", "index.html")
+	t, err := template.ParseFiles(tmplPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// テンプレート(html)にnotes(データ)をバインドすることで最終的なHTMLを生成する
 	err = t.Execute(w, notes)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
