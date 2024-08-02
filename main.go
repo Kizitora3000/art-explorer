@@ -173,7 +173,7 @@ func fetchNotes() ([]NoteDisplay, error) {
 }
 
 // handleRoot はルートパスへのリクエストを処理するハンドラ関数
-func handleRoot(w http.ResponseWriter, r *http.Request) {
+func index(w http.ResponseWriter, r *http.Request) {
 	notes, err := fetchNotes()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -196,8 +196,8 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// ルートハンドラの設定
-	http.HandleFunc("/", handleRoot)
+	// ルートパス("/"")とindex.htmlを表示するための関数を紐づけ
+	http.HandleFunc("/", index)
 
 	// サーバーの起動
 	fmt.Println("サーバーを起動しました。http://localhost:8080 にアクセスしてください。")
