@@ -45,6 +45,41 @@ type NoteDisplay struct {
 	}
 }
 
+// sendPostRequest は共通のHTTP POSTリクエストを送信する関数
+// requestBody interface{}, responseStruct interface{} と定義することで，異なる構造のリクエストボディやデータ構造を受け入れられる
+func sendPostRequest(apiURL string, requestBody interface{}, responseStruct interface{}) error {
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		return fmt.Errorf("JSON変換エラー: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return fmt.Errorf("リクエスト作成エラー: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("リクエスト送信エラー: %v", err)
+	}
+	defer resp.Body.Close()
+
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("レスポンス読み取りエラー: %v", err)
+	}
+
+	err = json.Unmarshal(responseBody, responseStruct)
+	if err != nil {
+		return fmt.Errorf("JSONデコードエラー: %v", err)
+	}
+
+	return nil
+}
+
 // checkFollowStatus はユーザーをフォローしているかどうかを確認する関数
 func checkFollowStatus(accessToken, userId string) (bool, error) {
 	apiURL := "https://misskey.io/api/users/relation"
@@ -54,34 +89,10 @@ func checkFollowStatus(accessToken, userId string) (bool, error) {
 		"userId": userId,
 	}
 
-	jsonBody, err := json.Marshal(requestBody)
-	if err != nil {
-		return false, fmt.Errorf("JSON変換エラー: %v", err)
-	}
-
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonBody))
-	if err != nil {
-		return false, fmt.Errorf("リクエスト作成エラー: %v", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return false, fmt.Errorf("リクエスト送信エラー: %v", err)
-	}
-	defer resp.Body.Close()
-
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return false, fmt.Errorf("レスポンス読み取りエラー: %v", err)
-	}
-
 	var relation RelationResponse
-	err = json.Unmarshal(responseBody, &relation)
+	err := sendPostRequest(apiURL, requestBody, &relation)
 	if err != nil {
-		return false, fmt.Errorf("JSONデコードエラー: %v", err)
+		return false, err
 	}
 
 	return relation.Following, nil
@@ -108,34 +119,10 @@ func fetchNotes() ([]NoteDisplay, error) {
 		"limit": LIMIT,
 	}
 
-	jsonBody, err := json.Marshal(requestBody)
-	if err != nil {
-		return nil, fmt.Errorf("JSON変換エラー: %v", err)
-	}
-
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonBody))
-	if err != nil {
-		return nil, fmt.Errorf("リクエスト作成エラー: %v", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("リクエスト送信エラー: %v", err)
-	}
-	defer resp.Body.Close()
-
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("レスポンス読み取りエラー: %v", err)
-	}
-
 	var notes []Note
-	err = json.Unmarshal(responseBody, &notes)
+	err = sendPostRequest(apiURL, requestBody, &notes)
 	if err != nil {
-		return nil, fmt.Errorf("JSONデコードエラー: %v", err)
+		return nil, err
 	}
 
 	var notesToDisplay []NoteDisplay
@@ -172,7 +159,7 @@ func fetchNotes() ([]NoteDisplay, error) {
 	return notesToDisplay, nil
 }
 
-// handleRoot はルートパスへのリクエストを処理するハンドラ関数
+// index はルートパスへのリクエストを処理するハンドラ関数
 func index(w http.ResponseWriter, r *http.Request) {
 	notes, err := fetchNotes()
 	if err != nil {
@@ -196,7 +183,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// ルートパス("/"")とindex.htmlを表示するための関数を紐づけ
+	// ルートパス("/")とindex.htmlを表示するための関数を紐づけ
 	http.HandleFunc("/", index)
 
 	// サーバーの起動
