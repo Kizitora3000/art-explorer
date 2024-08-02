@@ -18,12 +18,12 @@ const (
 	LIMIT = 50
 )
 
-// RelationResponse はフォロー関係のAPIレスポンスを表す構造体
+// フォロー済みか否かのAPIリクエストの結果を格納する構造体
 type RelationResponse struct {
 	Following bool `json:"following"`
 }
 
-// Note はMisskeyのノート（投稿）を表す構造体
+// タイムラインのノートの情報を格納する構造体
 type Note struct {
 	RenoteID string `json:"renoteId"`
 	Renote   struct {
@@ -37,7 +37,7 @@ type Note struct {
 	} `json:"renote"`
 }
 
-// NoteDisplay は表示用のノート情報を格納する構造体
+// index.htmlで表示する情報を格納する構造体
 type NoteDisplay struct {
 	UserURL string
 	Files   []struct {
