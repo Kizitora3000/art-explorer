@@ -7,8 +7,8 @@ RUN go mod download && go mod verify
 
 COPY . .
 
-# go build app file
-RUN go build -v -o /usr/local/bin/app ./...
+# ビルド時にmain.goを指定して単一の実行ファイルを生成
+RUN go build -v -o /usr/local/bin/app ./main.go
 
-# run app file
-CMD ["app"]
+# 実行ファイルを指定
+CMD ["/usr/local/bin/app"]
