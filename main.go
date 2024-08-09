@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/Kizitora3000/misskey-renote-only-app/oauth"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,6 +15,9 @@ func indexHandler(c *gin.Context) {
 }
 
 func main() {
+	codeVerifier, codeChallenge, state := oauth.PKCE()
+	fmt.Println(codeVerifier, codeChallenge, state)
+
 	// ginのコアとなるEngineインスタンスを作成
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
