@@ -18,6 +18,12 @@ func main() {
 	codeVerifier, codeChallenge, state := oauth.PKCE()
 	fmt.Println(codeVerifier, codeChallenge, state)
 
+	AuthorizationEndpoint, TokenEndpoint := oauth.GetOauthEndpoint()
+
+	// 取得した情報を表示
+	fmt.Println("Authorization Endpoint:", AuthorizationEndpoint)
+	fmt.Println("Token Endpoint:", TokenEndpoint)
+
 	// ginのコアとなるEngineインスタンスを作成
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
