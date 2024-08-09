@@ -8,24 +8,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// JSONレスポンスを返す関数
-// gin.Context: HTTPリクエスト/レスポンス を管理する構造体
-func indexHandler(authorizationUrl string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"authorization_url": authorizationUrl,
-		})
+// ルートパスのURLを取得
+func getClientId(c *gin.Context) string {
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
 	}
+	host := c.Request.Host
+	return fmt.Sprintf("%s://%s/", scheme, host)
 }
 
-func main() {
+// JSONレスポンスを返す関数
+func indexHandler(c *gin.Context) {
+	// PKCE用の情報を生成
 	codeVerifier, codeChallenge, state := oauth.PKCE()
 	fmt.Println(codeVerifier, codeChallenge, state)
 
 	authorizationEndpoint, tokenEndpoint := oauth.GetOauthEndpoint()
 
-	clientId := "http://localhost:8080/" // アプリの紹介ページのアドレス
-	codeChallengeMethod := "S256"        // 常にS256
+	// ルートパスを自動的に取得
+	clientId := getClientId(c)
+	codeChallengeMethod := "S256" // 常にS256
 	redirectUri := "/redirect"
 	scope := "read:account" // アカウントの情報を見る権限
 
@@ -34,12 +37,18 @@ func main() {
 	fmt.Println(authorizationUrl)
 	fmt.Println(tokenEndpoint)
 
-	// ginのコアとなるEngineインスタンスを作成
+	// HTMLテンプレートに渡す
+	c.HTML(http.StatusOK, "index.tmpl", gin.H{
+		"authorization_url": authorizationUrl,
+	})
+}
+
+func main() {
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
 
 	// ルートエンドポイント"/"にGETリクエストを処理するハンドラーを登録
-	router.GET("/", indexHandler(authorizationUrl))
+	router.GET("/", indexHandler)
 
 	// http://localhost:8080 でサーバを立てる
 	router.Run()
