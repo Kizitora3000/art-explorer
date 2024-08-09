@@ -10,8 +10,12 @@ import (
 
 // JSONレスポンスを返す関数
 // gin.Context: HTTPリクエスト/レスポンス を管理する構造体
-func indexHandler(c *gin.Context) {
-	c.HTML(http.StatusOK, "index.tmpl", gin.H{})
+func indexHandler(authorizationUrl string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{
+			"authorization_url": authorizationUrl,
+		})
+	}
 }
 
 func main() {
@@ -35,7 +39,7 @@ func main() {
 	router.LoadHTMLGlob("templates/*")
 
 	// ルートエンドポイント"/"にGETリクエストを処理するハンドラーを登録
-	router.GET("/", indexHandler)
+	router.GET("/", indexHandler(authorizationUrl))
 
 	// http://localhost:8080 でサーバを立てる
 	router.Run()
