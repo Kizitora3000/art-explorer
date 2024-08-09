@@ -12,11 +12,11 @@ func helloWorldHandler(c *gin.Context) {
 
 func main() {
 	// ginのコアとなるEngineインスタンスを作成
-	r := gin.Default()
+	router := gin.Default()
 
 	// ルートエンドポイント"/"にGETリクエストを処理するハンドラーを登録
-	r.GET("/", helloWorldHandler)
+	router.GET("/", index)
 
 	// http://localhost:8080 でサーバを立てる
-	r.Run()
+	router.Run()
 }
