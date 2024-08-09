@@ -18,11 +18,17 @@ func main() {
 	codeVerifier, codeChallenge, state := oauth.PKCE()
 	fmt.Println(codeVerifier, codeChallenge, state)
 
-	AuthorizationEndpoint, TokenEndpoint := oauth.GetOauthEndpoint()
+	authorizationEndpoint, tokenEndpoint := oauth.GetOauthEndpoint()
 
-	// 取得した情報を表示
-	fmt.Println("Authorization Endpoint:", AuthorizationEndpoint)
-	fmt.Println("Token Endpoint:", TokenEndpoint)
+	clientId := "http://localhost:8080/" // アプリの紹介ページのアドレス
+	codeChallengeMethod := "S256"        // 常にS256
+	redirectUri := "/redirect"
+	scope := "read:account" // アカウントの情報を見る権限
+
+	authorizationUrl := fmt.Sprintf("%s?client_id=%s&response_type=code&redirect_uri=%s&scope=%s&code_challenge=%s&code_challenge_method=%s&state=%s",
+		authorizationEndpoint, clientId, redirectUri, scope, codeChallenge, codeChallengeMethod, state)
+	fmt.Println(authorizationUrl)
+	fmt.Println(tokenEndpoint)
 
 	// ginのコアとなるEngineインスタンスを作成
 	router := gin.Default()
