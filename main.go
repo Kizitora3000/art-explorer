@@ -23,7 +23,7 @@ func getClientId(c *gin.Context) string {
 	return fmt.Sprintf("%s://%s", scheme, host)
 }
 
-// JSONレスポンスを返す関数
+// ログインページ
 func indexHandler(c *gin.Context) {
 	// PKCE用の情報を生成
 	codeVerifier, codeChallenge, state := oauth.PKCE()
