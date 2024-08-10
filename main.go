@@ -50,12 +50,25 @@ func indexHandler(c *gin.Context) {
 	})
 }
 
+// 認可コードを受け取るためのハンドラー
+func redirectHandler(c *gin.Context) {
+	code := c.Query("code")
+	state := c.Query("state")
+
+	// TODO: indexHandlerで生成した state と redirectHandlerで取得した state が一致してるか確認する必要がある
+
+	c.String(http.StatusOK, "Authorization successful.\nAuthorization code: %s\nState: %s\nYou can close this window.", code, state)
+}
+
 func main() {
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
 
 	// ルートエンドポイント"/"にGETリクエストを処理するハンドラーを登録
 	router.GET("/", indexHandler)
+
+	// 認可コードを受け取る/redirectエンドポイントを登録
+	router.GET("/redirect", redirectHandler)
 
 	// http://localhost:8080 でサーバを立てる
 	router.Run()
