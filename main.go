@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/Kizitora3000/misskey-renote-only-app/oauth"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 )
 
@@ -42,6 +44,11 @@ func indexHandler(c *gin.Context) {
 	fmt.Println(authorizationUrl)
 	fmt.Println(tokenEndpoint)
 
+	// セッションに `state` を保存
+	session := sessions.Default(c)
+	session.Set("state", state.String())
+	session.Save()
+
 	// HTMLテンプレートに渡す
 	c.HTML(http.StatusOK, "index.tmpl", gin.H{
 		"authorization_url": authorizationUrl,
@@ -55,14 +62,28 @@ func redirectHandler(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
 
-	// TODO: indexHandlerで生成した state と redirectHandlerで取得した state が一致してるか確認する必要がある
+	// セッションから `state` を取得してチェック
+	session := sessions.Default(c)
+	savedState := session.Get("state")
 
-	c.String(http.StatusOK, "Authorization successful.\nAuthorization code: %s\nState: %s\nYou can close this window.", code, state)
+	if savedState != state {
+		c.String(http.StatusUnauthorized, "State does not match. Unauthorized access.\nState: %s\nsavedState: %s", state, savedState)
+		return
+	}
+
+	// 認証が成功したことをユーザーに通知
+	c.String(http.StatusOK, "Authorization successful.\nAuthorization code: %s\nState: %s\nsavedState: %s\nYou can close this window.", code, state, savedState)
 }
 
 func main() {
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
+
+	// セッションミドルウェアを追加
+	// 同じユーザーが同じセッションでアクセスした際の値を管理することができる
+	// indexHandlerで保存した値をredirectHandlerで取得できるのはこの機能のおかげ
+	store := cookie.NewStore([]byte("secret"))
+	router.Use(sessions.Sessions("mysession", store))
 
 	// ルートエンドポイント"/"にGETリクエストを処理するハンドラーを登録
 	router.GET("/", indexHandler)
