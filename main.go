@@ -14,9 +14,9 @@ func getClientId(c *gin.Context) string {
 
 	// 原因不明: Azure App Serviceにデプロイすると，c.Request.TLS == nil となり scheme := "http" 扱いになるので一度コメントアウト
 	/*
-	if c.Request.TLS != nil {
-		scheme = "https"
-	}
+		if c.Request.TLS != nil {
+			scheme = "https"
+		}
 	*/
 
 	host := c.Request.Host
@@ -45,6 +45,7 @@ func indexHandler(c *gin.Context) {
 	// HTMLテンプレートに渡す
 	c.HTML(http.StatusOK, "index.tmpl", gin.H{
 		"authorization_url": authorizationUrl,
+		"client_id":         clientId,
 	})
 }
 
