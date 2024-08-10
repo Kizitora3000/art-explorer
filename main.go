@@ -34,7 +34,7 @@ func indexHandler(c *gin.Context) {
 	// ルートパスを自動的に取得
 	clientId := getClientId(c)
 	codeChallengeMethod := "S256" // 常にS256
-	redirectUri := "/redirect"
+	redirectUri := fmt.Sprintf("%s/redirect", clientId)
 	scope := "read:account" // アカウントの情報を見る権限
 
 	authorizationUrl := fmt.Sprintf("%s?client_id=%s&response_type=code&redirect_uri=%s&scope=%s&code_challenge=%s&code_challenge_method=%s&state=%s",
