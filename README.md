@@ -8,6 +8,13 @@ Misskeyのタイムラインのうち，リノートされたノートのみを�
 
 # How to deploy
 
+## Azure login
+
+1. az login
+2. az acr login --name MisskeyArtExplorer
+
+## Docker deploy
+
 1. docker build -t misskeyartexplorer.azurecr.io/misskey-art-explorer:v<version> .
 2. docker push misskeyartexplorer.azurecr.io/misskey-art-explorer:v<version>
 3. art-explorer -> デプロイ センター -> タグ
