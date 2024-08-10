@@ -46,6 +46,7 @@ func indexHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.tmpl", gin.H{
 		"authorization_url": authorizationUrl,
 		"client_id":         clientId,
+		"redirect_uri":      redirectUri,
 	})
 }
 
