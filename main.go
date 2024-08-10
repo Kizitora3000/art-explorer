@@ -20,7 +20,7 @@ func getClientId(c *gin.Context) string {
 	*/
 
 	host := c.Request.Host
-	return fmt.Sprintf("%s://%s/", scheme, host)
+	return fmt.Sprintf("%s://%s", scheme, host)
 }
 
 // JSONレスポンスを返す関数
