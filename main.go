@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -40,6 +42,11 @@ func indexHandler(c *gin.Context) {
 
 	authorizationURL := fmt.Sprintf("https://%s/miauth/%s?callback=%s", host, sessionID, redirectUri)
 
+	// redirect先で使用するためhostを保存
+	session := sessions.Default(c)
+	session.Set("host", host)
+	session.Save()
+
 	// HTMLテンプレートに渡す
 	c.HTML(http.StatusOK, "index.tmpl", gin.H{
 		"authorization_url": authorizationURL,
@@ -49,7 +56,13 @@ func indexHandler(c *gin.Context) {
 
 // 認証後のリダイレクト先
 func redirectHandler(c *gin.Context) {
-	c.String(http.StatusOK, "This is a redirect page.")
+	redirectedSessionID := c.Query("session")
+
+	// セッションから host を取得
+	session := sessions.Default(c)
+	redirectedHost := session.Get("host")
+
+	c.String(http.StatusOK, "This is a redirect page.\nid: %s\nho: %s", redirectedSessionID, redirectedHost)
 }
 
 func main() {
@@ -58,6 +71,12 @@ func main() {
 
 	// レンダリングするHTMLのディレクトリを指定
 	r.LoadHTMLGlob("templates/*")
+
+	// セッションミドルウェアを追加
+	// 同じユーザーが同じセッションでアクセスした際の値を管理することができる
+	// indexHandlerで保存した値をredirectHandlerで取得できるのはこの機能のおかげ
+	store := cookie.NewStore([]byte("secret"))
+	r.Use(sessions.Sessions("mysession", store))
 
 	// ルートエンドポイント"/"にGETリクエストを処理するハンドラーを登録
 	r.GET("/", indexHandler)
