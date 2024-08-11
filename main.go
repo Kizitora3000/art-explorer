@@ -4,13 +4,24 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // JSONレスポンスを返す関数
 // gin.Context: HTTPリクエスト/レスポンス を管理する構造体
 func indexHandler(c *gin.Context) {
+	// ---------- MiAuth ----------
+
+	// ランダムなUUIDを生成
+	sessionID, err := uuid.NewRandom()
+	if err != nil {
+		panic(err)
+	}
+
 	// HTMLテンプレートに渡す
-	c.HTML(http.StatusOK, "index.tmpl", gin.H{})
+	c.HTML(http.StatusOK, "index.tmpl", gin.H{
+		"sessionID": sessionID,
+	})
 }
 
 func main() {
