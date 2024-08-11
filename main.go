@@ -37,10 +37,22 @@ func indexHandler(c *gin.Context) {
 	token := session.Get("token")
 
 	if token != nil {
+		// アクセストークンが存在する場合はそのまま
 		fmt.Println("Token found in session:", token)
 	} else {
+		// アクセストークンが存在しない場合はログインページに遷移
 		fmt.Println("No token found in session")
+		c.Redirect(http.StatusFound, "/login")
 	}
+
+	// HTMLテンプレートに渡す
+	c.HTML(http.StatusOK, "index.tmpl", gin.H{
+		"token": token, // for debug
+	})
+}
+
+func loginHandler(c *gin.Context) {
+	session := sessions.Default(c)
 
 	// ---------- MiAuth ----------
 
@@ -62,9 +74,8 @@ func indexHandler(c *gin.Context) {
 	session.Save()
 
 	// HTMLテンプレートに渡す
-	c.HTML(http.StatusOK, "index.tmpl", gin.H{
+	c.HTML(http.StatusOK, "login.tmpl", gin.H{
 		"authorization_url": authorizationURL,
-		"session_id":        sessionID, // for Debug
 	})
 }
 
@@ -133,6 +144,9 @@ func main() {
 
 	// ルートエンドポイント"/"にGETリクエストを処理するハンドラーを登録
 	r.GET("/", indexHandler)
+
+	// アクセストークンが存在しない場合に遷移するログインページを/loginエンドポイントを登録
+	r.GET("/login", loginHandler)
 
 	// 認証後のリダイレクト先である/redirectエンドポイントを登録
 	r.GET("/redirect", redirectHandler)
