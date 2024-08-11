@@ -29,7 +29,8 @@ func LoginHandler(c *gin.Context) {
 
 	redirectUri := fmt.Sprintf("%s/redirect", utils.GetRootPath(c))
 
-	authorizationURL := fmt.Sprintf("https://%s/miauth/%s?callback=%s", host, sessionID, redirectUri)
+	permission := "read:account,read:following"
+	authorizationURL := fmt.Sprintf("https://%s/miauth/%s?callback=%s&permission=%s", host, sessionID, redirectUri, permission)
 
 	// redirect先で使用するためhostを保存
 	session.Set("host", host)
