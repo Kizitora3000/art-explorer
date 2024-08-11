@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -18,9 +19,15 @@ func indexHandler(c *gin.Context) {
 		panic(err)
 	}
 
+	// TODO: 他のホストでログインしているユーザもいるため，ホストはユーザが選択できるようにする
+	host := "misskey.io"
+
+	authorizationURL := fmt.Sprintf("https://%s/miauth/%s", host, sessionID)
+
 	// HTMLテンプレートに渡す
 	c.HTML(http.StatusOK, "index.tmpl", gin.H{
-		"sessionID": sessionID,
+		"authorization_url": authorizationURL,
+		"session_id":        sessionID, // for Debug
 	})
 }
 
