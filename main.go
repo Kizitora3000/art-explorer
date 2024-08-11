@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/gin-contrib/sessions"
@@ -24,9 +27,21 @@ func getRootPath(c *gin.Context) string {
 	return fmt.Sprintf("%s://%s", scheme, host)
 }
 
-// JSONレスポンスを返す関数
+// メインページ
 // gin.Context: HTTPリクエスト/レスポンス を管理する構造体
 func indexHandler(c *gin.Context) {
+	session := sessions.Default(c)
+
+	// ---------- check access token ----------
+	// セッションからtokenを取得して表示
+	token := session.Get("token")
+
+	if token != nil {
+		fmt.Println("Token found in session:", token)
+	} else {
+		fmt.Println("No token found in session")
+	}
+
 	// ---------- MiAuth ----------
 
 	// TODO: 他のホストでログインしているユーザもいるため，ホストはユーザが選択できるようにする
@@ -43,7 +58,6 @@ func indexHandler(c *gin.Context) {
 	authorizationURL := fmt.Sprintf("https://%s/miauth/%s?callback=%s", host, sessionID, redirectUri)
 
 	// redirect先で使用するためhostを保存
-	session := sessions.Default(c)
 	session.Set("host", host)
 	session.Save()
 
@@ -62,7 +76,46 @@ func redirectHandler(c *gin.Context) {
 	session := sessions.Default(c)
 	redirectedHost := session.Get("host")
 
-	c.String(http.StatusOK, "This is a redirect page.\nid: %s\nho: %s", redirectedSessionID, redirectedHost)
+	getAccessTokenURL := fmt.Sprintf("https://%s/api/miauth/%s/check", redirectedHost, redirectedSessionID)
+
+	// POSTリクエストを作成
+	req, err := http.NewRequest("POST", getAccessTokenURL, bytes.NewBuffer([]byte("")))
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Error creating request: %s", err)
+		return
+	}
+	// クライアントでリクエストを実行
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Error making request: %s", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// レスポンスボディを読み取る
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Error reading response: %s", err)
+		return
+	}
+
+	// レスポンスをJSONとしてパース
+	var responseJson map[string]interface{}
+	if err := json.Unmarshal(responseBody, &responseJson); err != nil {
+		c.String(http.StatusInternalServerError, "Error unmarshaling response: %s", err)
+		return
+	}
+
+	// "token" キーの値をセッションに保存
+	token, ok := responseJson["token"].(string)
+	if ok {
+		session.Set("token", token)
+		session.Save()
+	}
+
+	// インデックスページにリダイレクト
+	c.Redirect(http.StatusFound, "/")
 }
 
 func main() {
