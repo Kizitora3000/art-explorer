@@ -1,21 +1,27 @@
 package main
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 // JSONレスポンスを返す関数
 // gin.Context: HTTPリクエスト/レスポンス を管理する構造体
-func helloWorldHandler(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "Hello World",
-	})
+func indexHandler(c *gin.Context) {
+	// HTMLテンプレートに渡す
+	c.HTML(http.StatusOK, "index.tmpl", gin.H{})
 }
 
 func main() {
 	// ginのコアとなるEngineインスタンスを作成
 	r := gin.Default()
 
+	// レンダリングするHTMLのディレクトリを指定
+	r.LoadHTMLGlob("templates/*")
+
 	// ルートエンドポイント"/"にGETリクエストを処理するハンドラーを登録
-	r.GET("/", helloWorldHandler)
+	r.GET("/", indexHandler)
 
 	// http://localhost:8080 でサーバを立てる
 	r.Run()
