@@ -1,8 +1,74 @@
-<html>
-	<h1>
-		This is a index page
-	</h1>
-	<div>
-		<p>token: {{.token}}</p>
-	</div>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misskey Notes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .note {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .user-link {
+            display: block;
+            margin-bottom: 10px;
+            color: #0066cc;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .user-link:hover {
+            text-decoration: underline;
+        }
+        .images-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: start;
+        }
+        .note-image {
+            max-width: 400px;
+            max-height: 400px;
+            width: auto;
+            height: auto;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        @media (max-width: 600px) {
+            .images-container {
+                justify-content: center;
+            }
+            .note-image {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>未フォローのユーザーのノート</h1>
+    {{range .}}
+    <div class="note">
+        <a href="{{.UserURL}}" class="user-link">ユーザーページ</a>
+        <div class="images-container">
+            {{range .Files}}
+            <img src="{{.URL}}" alt="Attached image" class="note-image" loading="lazy">
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+</body>
 </html>
