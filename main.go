@@ -1,7 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/Kizitora3000/misskey-renote-only-app/oauth"
@@ -46,6 +51,11 @@ func indexHandler(c *gin.Context) {
 
 	// セッションに `state` を保存
 	session := sessions.Default(c)
+	session.Set("tokenEndpoint", tokenEndpoint)
+	session.Set("clientId", clientId)
+	session.Set("redirectUri", redirectUri)
+	session.Set("scope", scope)
+	session.Set("codeVerifier", codeVerifier)
 	session.Set("state", state.String())
 	session.Save()
 
@@ -54,6 +64,8 @@ func indexHandler(c *gin.Context) {
 		"authorization_url": authorizationUrl,
 		"client_id":         clientId,
 		"redirect_uri":      redirectUri,
+		"scope":             scope,
+		"code_verifier":     codeVerifier,
 	})
 }
 
@@ -72,7 +84,77 @@ func redirectHandler(c *gin.Context) {
 	}
 
 	// 認証が成功したことをユーザーに通知
-	c.String(http.StatusOK, "Authorization successful.\nAuthorization code: %s\nState: %s\nsavedState: %s\nYou can close this window.", code, state, savedState)
+	c.String(http.StatusOK, "Authorization successful.\nAuthorization code: %s\nState: %s\nsavedState: %s\nYou can close this window.\n", code, state, savedState)
+
+	// アクセストークンを取得する
+	clientId := session.Get("clientId").(string)
+	redirectUri := session.Get("redirectUri").(string)
+	scope := session.Get("scope").(string)
+	codeVerifier := session.Get("codeVerifier").(string)
+	endpoint := session.Get("tokenEndpoint").(string)
+
+	payload := map[string]string{
+		"grant_type":    "authorization_code",
+		"client_id":     clientId,
+		"redirect_uri":  redirectUri,
+		"scope":         scope,
+		"code":          code,
+		"code_verifier": codeVerifier,
+	}
+
+	// JSONを作成
+	accessTokenRequestJson, err := json.Marshal(payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error marshaling JSON"})
+		return
+	}
+
+	// POSTリクエストを作成
+	accessTokenRequest, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(accessTokenRequestJson))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating request"})
+		return
+	}
+
+	// ヘッダーにContent-Typeを指定
+	accessTokenRequest.Header.Set("Content-Type", "application/json")
+
+	// クライアントでリクエストを実行
+	client := &http.Client{}
+	accessTokenResponse, err := client.Do(accessTokenRequest)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error making request"})
+		return
+	}
+	defer accessTokenResponse.Body.Close()
+
+	// レスポンスボディを読み取る
+	responseBody, err := io.ReadAll(accessTokenResponse.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error reading response body"})
+		return
+	}
+
+	hash := sha256.New()
+	hash.Write([]byte(codeVerifier))
+	codeChallenge := base64.RawURLEncoding.EncodeToString(hash.Sum(nil))
+
+	c.String(http.StatusOK, "\nclient_id: %s\nredirect_uri: %s\ncode: %s\nscope: %s\ncode_verifier: %s\ncode_challenge: %s\n", clientId, redirectUri, code, scope, codeVerifier, codeChallenge)
+
+	// JSONとして解析して返す
+	if accessTokenResponse.StatusCode == http.StatusOK {
+		var accessTokenResponseJson map[string]interface{}
+		if err := json.Unmarshal(responseBody, &accessTokenResponseJson); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error unmarshaling response body"})
+			return
+		}
+		c.JSON(http.StatusOK, accessTokenResponseJson)
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":         fmt.Sprintf("Request failed with status code: %d", accessTokenResponse.StatusCode),
+			"response_body": string(responseBody),
+		})
+	}
 }
 
 func main() {
