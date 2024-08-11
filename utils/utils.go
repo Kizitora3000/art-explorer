@@ -7,7 +7,7 @@ import (
 )
 
 func GetRootPath(c *gin.Context) string {
-	scheme := "http"
+	scheme := "https"
 
 	// 原因不明: Azure App Serviceにデプロイすると，c.Request.TLS == nil となり scheme := "http" 扱いになるので一度コメントアウト
 	/*
