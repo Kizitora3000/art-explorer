@@ -120,9 +120,8 @@ func FetchNotes(token interface{}) ([]NoteDisplay, error) {
 	var notesToDisplay []NoteDisplay
 	processedUsernames := make(map[string]bool) // 処理済みユーザーネームを追跡
 	for i := 0; i < LIMIT && i < len(notes); i++ {
-		is_renote := notes[i].RenoteID
-
-		if is_renote == "" {
+		// リノートされたノート出ない場合はスキップ
+		if notes[i].RenoteID == "" {
 			continue
 		}
 
@@ -131,21 +130,22 @@ func FetchNotes(token interface{}) ([]NoteDisplay, error) {
 			continue
 		}
 
-		renote_user_id := notes[i].Renote.User.UserId
-
-		isFollowing, err := checkFollowStatus(token, renote_user_id)
+		isFollowing, err := checkFollowStatus(token, notes[i].Renote.User.UserId)
 		if err != nil {
 			return nil, fmt.Errorf("フォロー状態確認エラー: %v", err)
 		}
 
-		if !isFollowing {
-			user_url := "https://misskey.io/@" + notes[i].Renote.User.Username
-			notesToDisplay = append(notesToDisplay, NoteDisplay{
-				UserURL: user_url,
-				Files:   notes[i].Renote.Files,
-			})
-			processedUsernames[notes[i].Renote.User.Username] = true // ユーザーネームを処理済みとしてマーク
+		// リノートされたノートのユーザがすでにフォロー済みならスキップ
+		if isFollowing {
+			continue
 		}
+
+		user_url := "https://misskey.io/@" + notes[i].Renote.User.Username
+		notesToDisplay = append(notesToDisplay, NoteDisplay{
+			UserURL: user_url,
+			Files:   notes[i].Renote.Files,
+		})
+		processedUsernames[notes[i].Renote.User.Username] = true // ユーザーネームを処理済みとしてマーク
 	}
 
 	return notesToDisplay, nil
