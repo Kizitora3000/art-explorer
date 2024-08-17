@@ -140,6 +140,11 @@ func FetchNotes(token interface{}) ([]NoteDisplay, error) {
 			continue
 		}
 
+		// リノートされたノートが画像付きでない場合はスキップ
+		if len(notes[i].Renote.Files) == 0 {
+			continue
+		}
+
 		user_url := "https://misskey.io/@" + notes[i].Renote.User.Username
 		notesToDisplay = append(notesToDisplay, NoteDisplay{
 			UserURL: user_url,
