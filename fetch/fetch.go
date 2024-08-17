@@ -15,7 +15,7 @@ const (
 
 // フォロー済みか否かのAPIリクエストの結果を格納する構造体
 type RelationResponse struct {
-	Following bool `json:"following"`
+	Following bool `json:"isFollowing"`
 }
 
 // タイムラインのノートの情報を格納する構造体
@@ -23,7 +23,7 @@ type Note struct {
 	RenoteID string `json:"renoteId"`
 	Renote   struct {
 		User struct {
-			UserId   string `json:"userId"`
+			UserId   string `json:"id"`
 			Username string `json:"username"`
 		} `json:"user"`
 		Files []struct {
@@ -84,13 +84,18 @@ func checkFollowStatus(token interface{}, userId string) (bool, error) {
 		"userId": userId,
 	}
 
-	var relation RelationResponse
-	err := sendPostRequest(apiURL, requestBody, &relation)
+	var relations []RelationResponse // APIレスポンスが配列なので配列で宣言
+	err := sendPostRequest(apiURL, requestBody, &relations)
 	if err != nil {
 		return false, err
 	}
 
-	return relation.Following, nil
+	if len(relations) > 0 {
+		return relations[0].Following, nil
+	}
+
+	return false, fmt.Errorf("no relation data found")
+
 }
 
 // fetchNotes はMisskeyからノートを取得し、未フォローのユーザーのノートのみを返す関数
@@ -125,6 +130,8 @@ func FetchNotes(token interface{}) ([]NoteDisplay, error) {
 		if processedUsernames[notes[i].Renote.User.Username] {
 			continue
 		}
+
+		fmt.Println(notes[i].Renote.User.UserId)
 
 		renote_user_id := notes[i].Renote.User.UserId
 
