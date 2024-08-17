@@ -131,8 +131,6 @@ func FetchNotes(token interface{}) ([]NoteDisplay, error) {
 			continue
 		}
 
-		fmt.Println(notes[i].Renote.User.UserId)
-
 		renote_user_id := notes[i].Renote.User.UserId
 
 		isFollowing, err := checkFollowStatus(token, renote_user_id)
