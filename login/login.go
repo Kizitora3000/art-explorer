@@ -1,24 +1,26 @@
 package login
 
 import (
+	"art-explorer/utils"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
-	"github.com/Kizitora3000/misskey-renote-only-app/utils"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 func LoginHandler(c *gin.Context) {
+	// セッションに関する話は後述
 	session := sessions.Default(c)
 
-	// ---------- MiAuth ----------
+	// ----- MiAuth step1 -----
 
-	// TODO: 他のホストでログインしているユーザもいるため，ホストはユーザが選択できるようにする
+	// 認証先のサーバを選択する
+	// デフォルトなら misskey.io サーバでアカウントを作成しているはず
 	host := "misskey.io"
 
 	// ランダムなUUIDを生成
@@ -27,9 +29,17 @@ func LoginHandler(c *gin.Context) {
 		panic(err)
 	}
 
+	// ----- MiAuth step2 -----
+
+	// リダイレクト先のURLを設定
+	// ローカル上の場合： http://localhost:8080/redirect
+	// Azure上の場合： https://<azure site>/redirect
+	// GetRootPath関数はのちほど実装
 	redirectUri := fmt.Sprintf("%s/redirect", utils.GetRootPath(c))
 
+	// アクセストークンが持つ権限：タイムラインの取得とフォロー状態の確認だけなので，アカウント情報を見る「read:account」のみ与える
 	permission := "read:account"
+
 	authorizationURL := fmt.Sprintf("https://%s/miauth/%s?callback=%s&permission=%s", host, sessionID, redirectUri, permission)
 
 	// redirect先で使用するためhostを保存
@@ -44,6 +54,10 @@ func LoginHandler(c *gin.Context) {
 
 // 認証後のリダイレクト先
 func RedirectHandler(c *gin.Context) {
+	// ----- MiAuth step3 -----
+
+	// LoginHandlerで作成したUUIDを取得
+	// UUIDはURLのクエリパラメータで付いてくる
 	redirectedSessionID := c.Query("session")
 
 	// セッションから host を取得
@@ -58,6 +72,7 @@ func RedirectHandler(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "Error creating request: %s", err)
 		return
 	}
+
 	// クライアントでリクエストを実行
 	client := &http.Client{}
 	resp, err := client.Do(req)
