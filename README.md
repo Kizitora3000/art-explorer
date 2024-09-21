@@ -1,20 +1,25 @@
-# misskey-renote-only-app
-Misskeyのタイムラインのうち，リノートされたノートのみを表示するアプリケーション
+# art-explorer
 
-# How to run
+Misskey のタイムラインのうち，リノートされたノートのみを表示するアプリケーション
 
-1. docker build -t misskey-art-explorer .
-2. docker run -d -p 8080:8080 misskey-art-explorer
+## 記事
 
-# How to deploy
+https://zenn.dev/kizitora/articles/64df5ad69aaa1f
 
-## Azure login
+## How to run
+
+1. docker build -t art-explorer .
+2. docker run -d -p 8080:8080 art-explorer
+
+## How to deploy
+
+### Azure login
 
 1. az login
-2. az acr login --name MisskeyArtExplorer
+2. az acr login --name artExplorer
 
-## Docker deploy
+### Docker deploy
 
-1. docker build -t misskeyartexplorer.azurecr.io/misskey-art-explorer:v<version> .
-2. docker push misskeyartexplorer.azurecr.io/misskey-art-explorer:v<version>
+1. docker build -t artexplorer.azurecr.io/art-explorer:v<version> .
+2. docker push artexplorer.azurecr.io/art-explorer:v<version>
 3. art-explorer -> デプロイ センター -> タグ
